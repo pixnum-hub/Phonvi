@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phonvi - Ultimate Smartphone Selector</title>
+<style>
+:root{
+  --bg:#e6e6e6; --text:#333; --card:#f0f0f0;
+  --shadow-light:#fff; --shadow-dark:#c5c5c5;
+  --camera-color:#ff9800; --battery-color:#4caf50; --performance-color:#2196f3;
+}
+.dark{
+  --bg:#1a1a1a; --text:#f5f5f5; --card:#2a2a2a;
+  --shadow-light:#3a3a3a; --shadow-dark:#0f0f0f;
+  --camera-color:#ffa726; --battery-color:#81c784; --performance-color:#64b5f6;
+}
+body{
+  margin:0; font-family:Arial,sans-serif; background:var(--bg);
+  color:var(--text); display:flex; justify-content:center; align-items:center;
+  min-height:100vh; padding:20px;
+}
+.app-frame{
+  display:flex; flex-direction:column; align-items:center;
+  background:var(--card); padding:30px; width:100%; max-width:480px;
+  border-radius:25px; box-shadow:8px 8px 16px var(--shadow-dark),-8px -8px 16px var(--shadow-light);
+  position:relative; box-sizing:border-box;
+}
+.dark-toggle{
+  position:absolute; top:20px; right:20px; width:45px; height:45px;
+  border-radius:50%; border:none; background:var(--card);
+  box-shadow:4px 4px 10px var(--shadow-dark),-4px -4px 10px var(--shadow-light);
+  cursor:pointer; display:flex; justify-content:center; align-items:center; font-size:20px;
+}
+section{width:100%; display:flex; flex-direction:column; gap:15px; margin-top:20px;}
+.input-row {
+  display: flex; align-items: center; gap: 10px; width:100%;
+}
+.input-row label { width:120px; font-size:14px; }
+.input-row input[type=text], .input-row select, .input-row input[type=range] {
+  flex-grow: 1; padding:10px; font-size:16px;
+  border-radius:12px; border:none;
+  box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
+  background: var(--card); color: var(--text);
+}
+button{
+  padding:12px; width:100%; background:var(--card); color:var(--text);
+  border-radius:14px; border:none; font-size:16px; cursor:pointer;
+  box-shadow:6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+}
+.phone-card{
+  background:var(--card); padding:15px; border-radius:15px;
+  margin-top:10px; box-shadow:6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+}
+.best{border:2px solid #4caf50;}
+.score-bar-container{display:flex; align-items:center; margin:4px 0; gap:6px;}
+.score-bar-label{width:90px; font-size:14px;}
+.score-bar{height:12px; border-radius:6px; background:#ddd; flex-grow:1; overflow:hidden;}
+.score-bar-fill{height:100%; width:0%; border-radius:6px;}
+.footer{margin-top:auto; padding-top:20px; text-align:center; width:100%; font-size:14px; opacity:0.7;}
+.compare-container{display:flex; flex-direction:column; gap:10px;}
+.compare-table{width:100%; border-collapse:collapse; margin-top:10px;}
+.compare-table th, .compare-table td{border:1px solid var(--shadow-dark); padding:6px; text-align:center;}
+@media(min-width:600px){.compare-container{flex-direction:row;}}
+</style>
+</head>
+<body>
+<div class="app-frame">
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDark()">☀️</button>
+  <h2>Phonvi</h2>
+
+  <section id="filters">
+    <div class="input-row">
+      <label>Search:</label>
+      <input type="text" id="searchName" placeholder="Search phone name..." oninput="findPhones()">
+    </div>
+    <div class="input-row">
+      <label>Budget:</label>
+      <input type="range" id="budget" min="0" max="200000" step="1000" value="200000" oninput="updateBudgetLabel()">
+      <span id="budgetValue">₹0 - ₹200000</span>
+    </div>
+    <div class="input-row">
+      <label>Brand:</label>
+      <select id="brand" onchange="findPhones()">
+        <option value="">Any Brand</option>
+        <option>Samsung</option><option>Apple</option><option>Xiaomi</option><option>OnePlus</option>
+        <option>Realme</option><option>Oppo</option><option>Vivo</option><option>iQOO</option>
+        <option>Poco</option><option>Google</option><option>Infinix</option><option>Itel</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>Camera Priority:</label>
+      <input type="range" id="cameraPriority" min="1" max="5" step="1" value="1" oninput="updateCameraPriority()">
+      <span id="cameraPriorityVal">1</span>
+    </div>
+    <div class="input-row">
+      <label>Battery Priority:</label>
+      <input type="range" id="batteryPriority" min="1" max="5" step="1" value="1" oninput="updateBatteryPriority()">
+      <span id="batteryPriorityVal">1</span>
+    </div>
+    <div class="input-row">
+      <label>Performance Priority:</label>
+      <input type="range" id="performancePriority" min="1" max="5" step="1" value="1" oninput="updatePerformancePriority()">
+      <span id="performancePriorityVal">1</span>
+    </div>
+
+    <button onclick="findPhones()">Find Best Smartphones</button>
+    <button onclick="resetFilters()">Reset Filters</button>
+  </section>
+
+  <section id="results"></section>
+  <section class="compare-container" id="compare"></section>
+
+  <div class="footer">© Manik Roy 2025. All Rights Reserved.</div>
+</div>
+
+<script>
+// Expanded 55 smartphone dataset including budget phones
+const phones=[
+{name:"Samsung S24 Ultra",price:130000,brand:"Samsung",camera:10,battery:9,performance:10},
+{name:"Samsung S24+",price:96000,brand:"Samsung",camera:9,battery:9,performance:9},
+{name:"Samsung A54",price:38000,brand:"Samsung",camera:7,battery:8,performance:7},
+{name:"Samsung M34",price:17000,brand:"Samsung",camera:6,battery:9,performance:6},
+{name:"Samsung A34",price:29000,brand:"Samsung",camera:7,battery:8,performance:7},
+{name:"Samsung M14",price:13000,brand:"Samsung",camera:5,battery:10,performance:5},
+{name:"Apple iPhone 15 Pro Max",price:159000,brand:"Apple",camera:10,battery:7,performance:10},
+{name:"Apple iPhone 15",price:80000,brand:"Apple",camera:9,battery:7,performance:9},
+{name:"Apple iPhone 14",price:65000,brand:"Apple",camera:8,battery:7,performance:8},
+{name:"Apple iPhone 13",price:53000,brand:"Apple",camera:8,battery:6,performance:8},
+{name:"Apple iPhone SE 2022",price:35000,brand:"Apple",camera:6,battery:5,performance:7},
+{name:"Xiaomi 13 Pro",price:80000,brand:"Xiaomi",camera:9,battery:8,performance:9},
+{name:"Xiaomi 12 Pro",price:50000,brand:"Xiaomi",camera:8,battery:7,performance:8},
+{name:"Redmi Note 13 Pro",price:25000,brand:"Xiaomi",camera:8,battery:8,performance:7},
+{name:"Redmi Note 12",price:15000,brand:"Xiaomi",camera:7,battery:8,performance:6},
+{name:"Xiaomi 11i",price:22000,brand:"Xiaomi",camera:8,battery:8,performance:7},
+{name:"Xiaomi 10T",price:30000,brand:"Xiaomi",camera:8,battery:7,performance:8},
+{name:"OnePlus 12",price:70000,brand:"OnePlus",camera:9,battery:8,performance:10},
+{name:"OnePlus 11",price:55000,brand:"OnePlus",camera:8,battery:8,performance:9},
+{name:"OnePlus Nord 3",price:34000,brand:"OnePlus",camera:7,battery:8,performance:7},
+{name:"OnePlus Nord CE 3",price:27000,brand:"OnePlus",camera:7,battery:8,performance:7},
+{name:"OnePlus Nord CE 2",price:20000,brand:"OnePlus",camera:6,battery:7,performance:6},
+{name:"Realme GT 5 Pro",price:46000,brand:"Realme",camera:8,battery:8,performance:9},
+{name:"Realme 12 Pro+",price:30000,brand:"Realme",camera:8,battery:8,performance:7},
+{name:"Realme Narzo 60",price:16000,brand:"Realme",camera:7,battery:8,performance:6},
+{name:"Realme 11 Pro",price:24000,brand:"Realme",camera:8,battery:8,performance:7},
+{name:"Realme C55",price:13000,brand:"Realme",camera:6,battery:8,performance:5},
+{name:"Oppo Reno 10 Pro",price:39000,brand:"Oppo",camera:8,battery:7,performance:8},
+{name:"Oppo F23",price:25000,brand:"Oppo",camera:7,battery:8,performance:6},
+{name:"Oppo A78",price:18000,brand:"Oppo",camera:7,battery:8,performance:5},
+{name:"Oppo A17",price:13000,brand:"Oppo",camera:6,battery:8,performance:4},
+{name:"Vivo V29 Pro",price:40000,brand:"Vivo",camera:8,battery:7,performance:8},
+{name:"Vivo Y100",price:22000,brand:"Vivo",camera:7,battery:7,performance:6},
+{name:"Vivo T2",price:17000,brand:"Vivo",camera:7,battery:8,performance:6},
+{name:"Vivo V25",price:29000,brand:"Vivo",camera:8,battery:7,performance:7},
+{name:"iQOO 12",price:53000,brand:"iQOO",camera:9,battery:8,performance:10},
+{name:"iQOO Neo 7",price:30000,brand:"iQOO",camera:8,battery:8,performance:8},
+{name:"iQOO Z7",price:19000,brand:"iQOO",camera:7,battery:7,performance:7},
+{name:"iQOO Z6",price:14000,brand:"iQOO",camera:7,battery:8,performance:6},
+{name:"Poco X6 Pro",price:25000,brand:"Poco",camera:7,battery:8,performance:8},
+{name:"Poco F5",price:33000,brand:"Poco",camera:8,battery:8,performance:9},
+{name:"Poco M6 Pro",price:11000,brand:"Poco",camera:6,battery:8,performance:5},
+{name:"Poco X5",price:19000,brand:"Poco",camera:6,battery:8,performance:6},
+{name:"Google Pixel 8",price:70000,brand:"Google",camera:9,battery:7,performance:8},
+{name:"Google Pixel 7a",price:44000,brand:"Google",camera:8,battery:7,performance:7},
+{name:"Google Pixel 6a",price:30000,brand:"Google",camera:7,battery:7,performance:6},
+{name:"Google Pixel 5",price:46000,brand:"Google",camera:6,battery:6,performance:7},
+{name:"Samsung F54",price:28000,brand:"Samsung",camera:8,battery:9,performance:7},
+{name:"Realme C31",price:9000,brand:"Realme",camera:5,battery:8,performance:4},
+{name:"Redmi 12C",price:8500,brand:"Xiaomi",camera:5,battery:9,performance:5},
+{name:"Samsung Galaxy M04",price:9500,brand:"Samsung",camera:5,battery:8,performance:5},
+{name:"Infinix Hot 30i",price:8000,brand:"Infinix",camera:4,battery:8,performance:4},
+{name:"Itel Vision 3",price:7000,brand:"Itel",camera:3,battery:7,performance:3}
+];
+phones.forEach(p=>p.totalScore=p.camera+p.battery+p.performance);
+
+function toggleDark(){
+  document.body.classList.toggle("dark");
+  document.getElementById("darkToggle").textContent=document.body.classList.contains("dark")?"🌙":"☀️";
+}
+function updateBudgetLabel(){
+  document.getElementById("budgetValue").textContent=`₹0 - ₹${document.getElementById("budget").value}`;
+  findPhones();
+}
+function updateCameraPriority(){document.getElementById("cameraPriorityVal").textContent=document.getElementById("cameraPriority").value; findPhones();}
+function updateBatteryPriority(){document.getElementById("batteryPriorityVal").textContent=document.getElementById("batteryPriority").value; findPhones();}
+function updatePerformancePriority(){document.getElementById("performancePriorityVal").textContent=document.getElementById("performancePriority").value; findPhones();}
+function resetFilters(){
+  document.getElementById("searchName").value=""; document.getElementById("budget").value=200000;
+  document.getElementById("brand").value=""; document.getElementById("cameraPriority").value=1;
+  document.getElementById("batteryPriority").value=1; document.getElementById("performancePriority").value=1;
+  updateBudgetLabel(); updateCameraPriority(); updateBatteryPriority(); updatePerformancePriority();
+  findPhones();
+}
+
+function findPhones(){
+  const searchName=document.getElementById("searchName").value.toLowerCase();
+  const budget=parseInt(document.getElementById("budget").value);
+  const brand=document.getElementById("brand").value;
+  const camP=parseInt(document.getElementById("cameraPriority").value);
+  const battP=parseInt(document.getElementById("batteryPriority").value);
+  const perfP=parseInt(document.getElementById("performancePriority").value);
+
+  let filtered=phones.filter(p=>(!searchName||p.name.toLowerCase().includes(searchName))
+    &&(!brand||p.brand===brand)&&p.price<=budget);
+
+  filtered.forEach(p=>{
+    p.matchScore=(p.camera*camP+p.battery*battP+p.performance*perfP);
+  });
+
+  filtered.sort((a,b)=>b.matchScore-b.matchScore);
+
+  displayResults(filtered);
+}
+
+function displayResults(data){
+  const box=document.getElementById("results");
+  box.innerHTML="";
+  if(!data.length){box.innerHTML="<p>No matching phones found.</p>"; return;}
+  data.forEach((p,i)=>{
+    const card=document.createElement("div");
+    card.className="phone-card"+(i===0?" best":"");
+    card.innerHTML=`
+      <strong>${i===0?"⭐ BEST MATCH<br>":""}${p.name}</strong><br>
+      Brand: ${p.brand}<br>Price: ₹${p.price}<br>
+      <div class="score-bar-container"><span class="score-bar-label">📸 Camera</span>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${p.camera*10}%;background:var(--camera-color); transition:width 0.6s;"></div></div></div>
+      <div class="score-bar-container"><span class="score-bar-label">🔋 Battery</span>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${p.battery*10}%;background:var(--battery-color); transition:width 0.6s;"></div></div></div>
+      <div class="score-bar-container"><span class="score-bar-label">⚡ Performance</span>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${p.performance*10}%;background:var(--performance-color); transition:width 0.6s;"></div></div></div>
+      Total Score: ${p.totalScore}<br>Match Score: ${p.matchScore}`;
+    box.appendChild(card);
+  });
+}
+
+// Initial display
+findPhones();
+</script>
+</body>
+</html>
